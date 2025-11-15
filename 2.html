@@ -1,0 +1,2559 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aqua Sync Dashboard</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Enhanced Responsive CSS for Mobile */
+
+        @media (max-width: 980px) {
+            .hero-inner h1 {
+                font-size: 2.6rem;
+            }
+
+            .hero-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .dashboard-panels .panels-inner {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 560px) {
+
+            body,
+            html {
+                font-size: 14px;
+            }
+
+            header {
+                padding: 1rem;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .logo {
+                font-size: 1.4rem;
+                gap: 0.5rem;
+                margin-bottom: 8px;
+            }
+
+            .hero-inner h1 {
+                font-size: 2rem;
+            }
+
+            .hero-sub {
+                font-size: 1rem;
+                max-width: 90%;
+                margin: 0 auto 1rem auto;
+            }
+
+            .hero-ctas {
+                flex-direction: column;
+                gap: 0.6rem;
+                width: 90%;
+                margin: 0 auto;
+            }
+
+            .btn-primary,
+            .btn-ghost {
+                width: 100%;
+                padding: 0.8rem 1rem;
+                font-size: 1rem;
+                border-radius: 10px;
+            }
+
+            .hero-stats {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                padding: 0 1rem;
+            }
+
+            .hero-stat .stat-value {
+                font-size: 1.8rem;
+            }
+
+            .dashboard-container {
+                grid-template-columns: 1fr;
+                min-height: auto;
+                padding: 0 1rem 1rem 1rem;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 260px;
+                overflow-x: auto;
+                margin-bottom: 1rem;
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                box-shadow: none;
+            }
+
+            .sidebar-section {
+                padding-bottom: 1rem;
+            }
+
+            .main-content {
+                height: 300px;
+            }
+
+            #globeContainer,
+            #mapContainer,
+            #globeContainerExpanded {
+                height: 300px !important;
+            }
+
+            .view-toggle {
+                position: static;
+                margin: 10px 0;
+                justify-content: center;
+                width: 100%;
+                gap: 12px;
+            }
+
+            .view-toggle button {
+                flex: 1 1 auto;
+                font-size: 0.9rem;
+                padding: 8px 0;
+            }
+
+            .chart-grid {
+                grid-template-columns: 1fr !important;
+                padding: 1rem !important;
+            }
+
+            .chart-card {
+                padding: 1rem !important;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+            }
+
+            .stat-card .value {
+                font-size: 1.8rem;
+            }
+
+            /* Scrollbar styling for horizontal scrolling sidebar */
+            .sidebar::-webkit-scrollbar {
+                height: 6px;
+            }
+
+            .sidebar::-webkit-scrollbar-thumb {
+                background: rgba(0, 179, 255, 0.4);
+                border-radius: 4px;
+            }
+        }
+
+        /* Improve tap targets */
+        button,
+        .nav-link {
+            min-height: 44px;
+            padding: 0.5rem 1rem;
+        }
+
+        /* Improve readable font sizes */
+        body {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        /* Subtle improvements for small devices */
+        @media (max-width: 360px) {
+            .hero-inner h1 {
+                font-size: 1.6rem;
+            }
+
+            .btn-primary,
+            .btn-ghost {
+                font-size: 0.9rem;
+                padding: 0.7rem 1rem;
+            }
+        }
+
+        :root {
+            --primary-color: #00e6ff;
+            /* neon cyan */
+            --primary-2: #00b3ff;
+            --accent-cyan: #00e6ff;
+            --accent-teal: #1dd1a1;
+            --accent-orange: #ffb86b;
+            --accent-red: #ff6b6b;
+            --bg-color-gradient: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+            --bg-elev: rgba(166, 165, 165, 0.605);
+            --card-bg: rgba(135, 132, 132, 0.47);
+            --card-hover: rgba(140, 136, 136, 0.299);
+            --font-color: #ffffff;
+            /* main text: white */
+            --font-light: #e0e0e0;
+            /* muted / light gray */
+            --muted: #e0e0e0;
+            --border-color: rgba(0, 230, 255, 0.06);
+            --glow-strong: 0 6px 30px rgba(0, 230, 255, 0.14);
+            --glow-soft: 0 4px 18px rgba(0, 230, 255, 0.08);
+            --shadow-sm: 0 6px 20px rgba(0, 0, 0, 0.6);
+            --shadow-md: 0 10px 40px rgba(0, 0, 0, 0.7);
+            --shadow-lg: 0 18px 60px rgba(0, 0, 0, 0.75);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            background: var(--bg-color-gradient);
+            color: var(--font-color);
+            height: 100%;
+            overflow: auto;
+        }
+
+        header {
+            background: transparent;
+            color: var(--font-color);
+            padding: 1.2rem 2rem;
+            z-index: 1000;
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(6px);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--primary-color);
+            text-shadow: 0 2px 20px rgba(0, 230, 255, 0.07);
+        }
+
+        .logo i {
+            font-size: 1.8rem;
+            background: radial-gradient(circle at 30% 20%, var(--primary-color), var(--primary-2));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: float 3s ease-in-out infinite;
+            filter: drop-shadow(0 6px 18px rgba(0, 230, 255, 0.14));
+        }
+
+        /* Hero section */
+        .hero {
+            padding: 3.4rem 2rem 2rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto 1.6rem auto;
+            text-align: center;
+        }
+
+        .hero-inner h1 {
+            font-size: 3.6rem;
+            margin-bottom: 0.6rem;
+            color: var(--primary-color);
+            font-weight: 800;
+            text-shadow: 0 10px 40px rgba(0, 230, 255, 0.04);
+        }
+
+        .hero-sub {
+            color: var(--muted);
+            font-size: 1.15rem;
+            margin-bottom: 1.6rem;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-ctas {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 0.8rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, rgba(0, 230, 255, 0.16), rgba(0, 179, 255, 0.22));
+            color: #002b33;
+            padding: 0.9rem 1.6rem;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 230, 255, 0.18);
+            box-shadow: 0 12px 40px rgba(0, 230, 255, 0.06);
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--font-color);
+            padding: 0.86rem 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            box-shadow: none;
+            cursor: pointer;
+        }
+
+        .hero-stats {
+            margin-top: 2.4rem;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.4rem;
+            align-items: stretch;
+        }
+
+        .hero-stat {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.01), rgba(255, 255, 255, 0.008));
+            border-radius: 12px;
+            padding: 1.4rem;
+            text-align: left;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(0, 230, 255, 0.03);
+        }
+
+        .hero-stat .stat-title {
+            color: var(--muted);
+            font-weight: 600;
+            margin-bottom: 0.6rem;
+        }
+
+        .hero-stat .stat-value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--font-color);
+            margin-bottom: 0.4rem;
+        }
+
+        .hero-stat .stat-sub {
+            color: var(--accent-teal);
+            font-weight: 700;
+        }
+
+        .hero-stat.warning {
+            border-color: rgba(255, 190, 60, 0.06);
+        }
+
+        .hero-stat.danger {
+            border-color: rgba(255, 80, 90, 0.06);
+        }
+
+        .hero-stat.success {
+            border-color: rgba(40, 215, 140, 0.06);
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--font-color);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            padding: 0.7rem 1.2rem;
+            border-radius: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: left 0.3s ease;
+            z-index: -1;
+        }
+
+        .nav-link:hover::before {
+            left: 0;
+        }
+
+        .nav-link:hover {
+            transform: translateY(-2px);
+        }
+
+        .nav-link.active {
+            background: linear-gradient(90deg, rgba(0, 230, 255, 0.06), rgba(0, 160, 255, 0.04));
+            box-shadow: var(--glow-soft);
+            border: 1px solid rgba(0, 230, 255, 0.06);
+        }
+
+        .dashboard-container {
+            display: grid;
+            /* MODIFIED: Fixed width removed */
+            grid-template-columns: 380px 1fr;
+            min-height: calc(100vh - 75px);
+        }
+
+        .sidebar {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+            padding: 1.8rem;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255, 255, 255, 0.02);
+            box-shadow: inset -2px 0 24px rgba(0, 0, 0, 0.6);
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(0, 98, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 98, 255, 0.5);
+        }
+
+        .sidebar-section {
+            margin-bottom: 2.2rem;
+        }
+
+        .sidebar-section h3 {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 12px;
+            margin-bottom: 1rem;
+            color: var(--secondary-color);
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+        .sidebar-section h3 i {
+            color: var(--primary-color);
+            font-size: 1.2rem;
+        }
+
+        .data-point {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.95rem;
+            padding: 12px 10px;
+            border-bottom: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+            border-radius: 6px;
+        }
+
+        .data-point:hover {
+            background-color: var(--card-hover);
+            transform: translateX(4px);
+            border-left: 3px solid var(--primary-color);
+            padding-left: 12px;
+        }
+
+        .data-point span:first-child {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .data-point span:last-child {
+            font-weight: 700;
+            color: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .main-content {
+            position: relative;
+            background: transparent;
+            overflow: auto;
+        }
+
+        .view-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 500;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            padding: 6px;
+            display: flex;
+            gap: 6px;
+        }
+
+        .view-toggle button {
+            padding: 10px 18px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--font-light);
+            border-radius: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .view-toggle button:hover {
+            background-color: rgba(0, 98, 255, 0.1);
+            color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .view-toggle button.active {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 98, 255, 0.3);
+        }
+
+        #globeContainer,
+        #mapContainer {
+            width: 100%;
+            height: 100%;
+        }
+
+        #mapContainer {
+            display: none;
+        }
+
+        .globe-popup {
+            position: absolute;
+            background: #f0f8ff;
+            /* Alice Blue background for contrast */
+            color: #1e1e1e;
+            /* dark gray text for readability */
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-left: 4px solid #00bcd4;
+            /* aqua accent */
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(15, 32, 39, 0.35);
+            padding: 14px 16px;
+            transform: translate(-50%, -120%);
+            z-index: 1000;
+            pointer-events: auto;
+            transition: opacity 0.18s ease, transform 0.18s ease;
+            min-width: 220px;
+            backdrop-filter: none;
+        }
+
+        .globe-popup h4 {
+            margin: 0 0 8px 0;
+            color: #1e1e1e;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .globe-popup p {
+            margin: 6px 0;
+            color: #333333;
+            font-size: 0.92rem;
+            line-height: 1.3;
+        }
+
+        /* Chart popup: larger, light contrast for readability on dark backgrounds */
+        .chart-popup {
+            position: absolute;
+            background: #f8fbff;
+            /* very light */
+            color: #bababa;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-left: 4px solid #00bcd4;
+            border-radius: 14px;
+            box-shadow: 0 14px 40px rgba(57, 124, 168, 0.45);
+            padding: 16px 18px;
+            z-index: 1200;
+            pointer-events: auto;
+            min-width: 260px;
+            max-width: 420px;
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            transform-origin: 0 0;
+        }
+
+        .chart-popup.large {
+            min-width: 340px;
+            padding: 20px 22px;
+            font-size: 0.98rem;
+        }
+
+        .chart-popup h4 {
+            margin: 0 0 8px 0;
+            color: #999595;
+            font-size: 1.02rem;
+        }
+
+        .chart-popup .meta {
+            color: #333333;
+            font-size: 0.95rem;
+            margin-top: 6px;
+        }
+
+        .content-section {
+            display: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        /* Chart Sections */
+        .chart-grid {
+            display: grid;
+            /* MODIFIED: 420px is too wide for mobile */
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            padding: 2rem;
+            background: transparent;
+            overflow-y: visible;
+            height: auto;
+        }
+
+        .chart-card {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+            padding: 1.6rem;
+            border-radius: 14px;
+            box-shadow: var(--shadow-md);
+            transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.45s;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            box-shadow: inset 0 0 60px rgba(0, 230, 255, 0.02), inset 0 -2px 40px rgba(0, 0, 0, 0.6);
+            border-radius: 14px;
+        }
+
+        .chart-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-6px) scale(1.005);
+        }
+
+        .chart-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .chart-card h3 i {
+            color: rgba(0, 230, 255, 0.9);
+            font-size: 1.3rem;
+            filter: drop-shadow(0 6px 20px rgba(0, 230, 255, 0.06));
+        }
+
+        /* Preview Section */
+        .preview-container {
+            padding: 2rem;
+            background: transparent;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.01));
+            padding: 1.6rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+            border-left: 4px solid rgba(0, 230, 255, 0.12);
+            transition: transform 0.35s ease, box-shadow 0.35s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 12px;
+            box-shadow: 0 0 40px rgba(0, 230, 255, 0.03) inset;
+            pointer-events: none;
+        }
+
+        .stat-card:nth-child(2) {
+            border-left-color: var(--accent-teal);
+        }
+
+        .stat-card:nth-child(3) {
+            border-left-color: var(--accent-orange);
+        }
+
+        .stat-card:nth-child(4) {
+            border-left-color: var(--accent-red);
+        }
+
+        .stat-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-4px);
+        }
+
+        .stat-card .value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--font-color);
+            margin-bottom: 0.5rem;
+            text-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+        }
+
+        /* Reveal animations for modern web feel */
+        .reveal {
+            opacity: 0;
+            transform: translateY(12px) scale(0.997);
+            transition: opacity 700ms cubic-bezier(0.2, 0.9, 0.2, 1), transform 700ms cubic-bezier(0.2, 0.9, 0.2, 1);
+            will-change: opacity, transform;
+        }
+
+        .reveal.show {
+            opacity: 1;
+            transform: none;
+        }
+
+        /* Header micro interactions */
+        .logo:hover {
+            transform: translateY(-4px) scale(1.03);
+            transition: transform 260ms ease;
+        }
+
+        .stat-card .label {
+            font-size: 0.9rem;
+            color: var(--font-light);
+            font-weight: 600;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Leaflet Map Overrides */
+        .leaflet-control {
+            box-shadow: var(--shadow-md) !important;
+            border-radius: 8px !important;
+        }
+
+        .leaflet-control-zoom-in,
+        .leaflet-control-zoom-out {
+            border-radius: 6px !important;
+            color: var(--primary-color) !important;
+            border: 1px solid var(--border-color) !important;
+        }
+
+        .leaflet-popup-content-wrapper {
+            border-radius: 12px !important;
+            box-shadow: var(--shadow-lg) !important;
+        }
+
+        /* Dashboard Panels: Regional + Alerts */
+        .dashboard-panels {
+            max-width: 1200px;
+            margin: 0 auto 1.6rem auto;
+            padding: 0 2rem;
+        }
+
+        .panels-inner {
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            gap: 1.6rem;
+        }
+
+        .regional-panel,
+        .alerts-panel {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.01), rgba(255, 255, 255, 0.008));
+            border-radius: 12px;
+            padding: 1.6rem;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            box-shadow: var(--shadow-md);
+        }
+
+        .regional-panel h3,
+        .alerts-panel h3 {
+            color: var(--font-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .region-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .region-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .region-meta {
+            width: 160px;
+        }
+
+        .region-meta .name {
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .region-meta .pct {
+            float: right;
+            color: var(--font-color);
+            font-weight: 800;
+        }
+
+        .progress-bar-bg {
+            flex: 1;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 0%;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--primary-2));
+            box-shadow: 0 6px 18px rgba(0, 230, 255, 0.06);
+            border-radius: 8px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #061018;
+            background: var(--primary-color);
+        }
+
+        .badge.moderate {
+            background: #f6a623;
+            color: #091014;
+        }
+
+        .badge.concerning {
+            background: #ff6b6b;
+            color: #091014;
+        }
+
+        .badge.excellent {
+            background: #00d28a;
+            color: #02130d;
+        }
+
+        .alerts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .alert-card {
+            padding: 12px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            color: var(--font-color);
+        }
+
+        .alert-card .title {
+            font-weight: 800;
+            color: #ff7070;
+            margin-bottom: 6px;
+        }
+
+        .alert-card.warning .title {
+            color: #ffb84d;
+        }
+
+        .alert-card.success .title {
+            color: #5fe4a4;
+        }
+
+        .alert-sub {
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        /* --- NEW: Mobile Navigation Styles --- */
+        .nav-toggle {
+            display: none;
+            /* Hidden on desktop */
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            z-index: 2000;
+        }
+
+        .hamburger {
+            display: block;
+            position: relative;
+            width: 28px;
+            height: 3px;
+            background: var(--font-color);
+            border-radius: 3px;
+            transition: all 0.25s ease-in-out;
+        }
+
+        .hamburger::before,
+        .hamburger::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--font-color);
+            border-radius: 3px;
+            transition: all 0.25s ease-in-out;
+        }
+
+        .hamburger::before {
+            transform: translateY(-8px);
+        }
+
+        .hamburger::after {
+            transform: translateY(8px);
+        }
+
+        /* --- MODIFIED: Existing Media Query --- */
+        @media (max-width: 980px) {
+            .hero-inner h1 {
+                font-size: 2.6rem;
+            }
+
+            .hero-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .panels-inner {
+                grid-template-columns: 1fr;
+            }
+
+            /* --- NEW: Mobile Nav & Layout --- */
+            header {
+                padding: 1rem 1.5rem;
+            }
+
+            .nav-toggle {
+                display: block;
+                /* Show hamburger */
+            }
+
+            .nav-menu {
+                display: none;
+                /* Hide nav links by default */
+                position: absolute;
+                top: 70px;
+                /* Position below header */
+                left: 0;
+                right: 0;
+                width: 100%;
+                flex-direction: column;
+                background: var(--bg-color-gradient);
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+                padding: 1rem;
+                z-index: 1999;
+            }
+
+            .nav-menu.active {
+                display: flex;
+                /* Show menu when active */
+            }
+
+            .nav-link {
+                width: 100%;
+                padding: 1.2rem 1rem;
+                font-size: 1.1rem;
+                justify-content: center;
+            }
+
+            .nav-toggle.active .hamburger {
+                background: transparent;
+                /* Animate to 'X' */
+            }
+
+            .nav-toggle.active .hamburger::before {
+                transform: rotate(45deg);
+            }
+
+            .nav-toggle.active .hamburger::after {
+                transform: rotate(-45deg);
+            }
+
+            .dashboard-container {
+                /* Change to a single column */
+                grid-template-columns: 1fr;
+            }
+
+            .main-content {
+                /* Make map the first item in the flow */
+                grid-row: 1;
+                /* Give it a minimum height so it's visible */
+                min-height: 60vh;
+            }
+
+            .sidebar {
+                /* Make sidebar the second item */
+                grid-row: 2;
+                width: 100%;
+            }
+
+            /* --- End of New Rules --- */
+        }
+
+        /* --- MODIFIED: Existing Media Query --- */
+        @media (max-width: 560px) {
+            .hero-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-inner h1 {
+                font-size: 2.2rem;
+            }
+
+            /* Further reduced */
+            .hero-ctas {
+                flex-direction: column;
+            }
+
+            .btn-primary,
+            .btn-ghost {
+                width: 100%;
+            }
+
+            /* --- NEW: Chart & Stat Tweaks --- */
+            .chart-grid {
+                /* Force 1 column on small screens */
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+
+            .chart-card {
+                padding: 1.2rem;
+            }
+
+            .hero-stat .stat-value {
+                font-size: 1.8rem;
+            }
+
+            /* --- End of New Rules --- */
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="logo">
+            <i class="fas fa-globe"></i>
+            <span>Aqua Sync Dashboard</span>
+        </div>
+
+        <button class="nav-toggle" aria-label="toggle navigation">
+            <span class="hamburger"></span>
+        </button>
+
+        <nav class="nav-menu" id="nav-menu">
+            <a href="#dashboard" class="nav-link active" onclick="switchSection('dashboard', event)">
+                <i class="fas fa-chart-line"></i> Dashboard
+            </a>
+            <a href="#chart" class="nav-link" onclick="switchSection('chart', event)">
+                <i class="fas fa-bar-chart"></i> Charts
+            </a>
+            <a href="#globe" class="nav-link" onclick="switchSection('globe', event)">
+                <i class="fas fa-globe"></i> Globe
+            </a>
+            <a href="#preview" class="nav-link" onclick="switchSection('preview', event)">
+                <i class="fas fa-eye"></i> Live Preview
+            </a>
+        </nav>
+    </header>
+
+    <div id="dashboard" class="content-section active">
+        <section class="hero">
+            <div class="hero-inner">
+                <h1>Aqua Sync Global</h1>
+                <p class="hero-sub">Real-time monitoring of global water health, pollution levels, and purification
+                    progress</p>
+                <div class="hero-ctas">
+                    <button class="btn-primary" onclick="switchSection('dashboard', event)">View Dashboard</button>
+                    <button class="btn-ghost" onclick="switchSection('chart', event)">View Analytics</button>
+                </div>
+            </div>
+
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <div class="stat-title">Global Water Quality</div>
+                    <div class="stat-value">7.8</div>
+                    <div class="stat-sub">+0.2 from last month</div>
+                </div>
+                <div class="hero-stat warning">
+                    <div class="stat-title">Pollution Index</div>
+                    <div class="stat-value">42%</div>
+                    <div class="stat-sub">-5% improvement</div>
+                </div>
+                <div class="hero-stat danger">
+                    <div class="stat-title">Ocean Acidity</div>
+                    <div class="stat-value">8.05 pH</div>
+                    <div class="stat-sub">-0.05 more acidic</div>
+                </div>
+                <div class="hero-stat success">
+                    <div class="stat-title">Purification Active</div>
+                    <div class="stat-value">1,247</div>
+                    <div class="stat-sub">+127 new facilities</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="dashboard-panels">
+            <div class="panels-inner">
+                <div class="regional-panel">
+                    <h3><i class="fas fa-map-marker-alt"></i> Regional Water Quality</h3>
+                    <div class="region-list" id="regionList">
+                    </div>
+                </div>
+
+                <div class="alerts-panel">
+                    <h3><i class="fas fa-bell"></i> Critical Alerts</h3>
+                    <div class="alerts-list" id="alertsList">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="dashboard-container">
+            <aside class="sidebar">
+                <div class="sidebar-section" id="data-panel">
+                    <h3><i class="fas fa-map-pin"></i> Regional Data</h3>
+                    <p style="font-size: 0.9rem; color: #999;">Click on the globe to see details.</p>
+                    <div id="data-content" style="display:none;">
+                        <div class="data-point">
+                            <span>Region:</span>
+                            <span id="data-region">--</span>
+                        </div>
+                        <div class="data-point">
+                            <span>pH Level:</span>
+                            <span id="data-ph">--</span>
+                        </div>
+                        <div class="data-point">
+                            <span>Temp Anomaly:</span>
+                            <span id="data-temp">--</span>
+                        </div>
+                        <div class="data-point">
+                            <span>Plastic Conc.:</span>
+                            <span id="data-plastic">--</span>
+                        </div>
+                        <div class="data-point">
+                            <span>Biodiversity:</span>
+                            <span id="data-bio">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-chart-area"></i> pH Level Trend</h3>
+                    <p style="font-size: 0.85rem; color: #999;">Last 7 Days</p>
+                    <canvas id="trendsChart"></canvas>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-info-circle"></i> Status</h3>
+                    <div class="data-point">
+                        <span>System Status:</span>
+                        <span style="color: var(--success-color);">Online</span>
+                    </div>
+                    <div class="data-point">
+                        <span>Data Points:</span>
+                        <span>1,240+</span>
+                    </div>
+                    <div class="data-point">
+                        <span>Last Updated:</span>
+                        <span>2 min ago</span>
+                    </div>
+                </div>
+            </aside>
+
+            <main class="main-content">
+                <div class="view-toggle">
+                    <button id="btn-globe" class="active"><i class="fas fa-globe"></i> 3D Globe</button>
+                    <button id="btn-map"><i class="fas fa-map"></i> 2D Map</button>
+                </div>
+
+                <div id="globeContainer"></div>
+                <div id="mapContainer" style="display:none"></div>
+
+                <div id="globePopup" class="globe-popup" style="display: none; opacity: 0;"></div>
+                <div id="chartPopup" class="chart-popup" style="display:none; opacity:0;"></div>
+            </main>
+        </div>
+    </div>
+
+    <div id="chart" class="content-section">
+        <div class="chart-grid">
+            <h2
+                style="color: var(--primary-color); grid-column: 1/-1; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 1rem;">
+                <i class="fas fa-chart-bar" style="font-size: 1.8rem;"></i> Advanced Analytics & Charts
+            </h2>
+
+            <div class="chart-card reveal">
+                <h3><i class="fas fa-heartbeat"></i> pH Level Trend</h3>
+                <canvas id="chartPH"></canvas>
+            </div>
+
+            <div class="chart-card reveal">
+                <h3><i class="fas fa-thermometer-half"></i> Temperature Anomaly</h3>
+                <canvas id="chartTemp"></canvas>
+            </div>
+
+            <div class="chart-card reveal">
+                <h3><i class="fas fa-trash"></i> Plastic Concentration</h3>
+                <canvas id="chartPlastic"></canvas>
+            </div>
+
+            <div class="chart-card reveal">
+                <h3><i class="fas fa-leaf"></i> Biodiversity Index</h3>
+                <canvas id="chartBio"></canvas>
+            </div>
+
+            <div class="chart-card reveal">
+                <h3><i class="fas fa-wave-square"></i> Biodiversity Trend</h3>
+                <canvas id="chartBioGraph" style="height: 240px; width:100%;"></canvas>
+            </div>
+
+            <div class="chart-card reveal"
+                style="grid-column: 1/-1; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start;">
+                <div>
+                    <h3><i class="fas fa-water"></i> Sea Level Trend</h3>
+                    <canvas id="seaLevelChart" style="height: 360px; width: 100%;"></canvas>
+                </div>
+                <div>
+                    <h3><i class="fas fa-industry"></i> Pollutant Composition</h3>
+                    <canvas id="pollutantChart" style="height: 360px; width: 100%;"></canvas>
+                </div>
+                <p
+                    style="grid-column: 1/-1; margin-top: 1rem; color: var(--muted); font-size: 0.9rem; text-align: center;">
+                    <i class="fas fa-info-circle"></i> Additional analytics: sea level trends and pollutant breakdowns
+                    per region
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div id="globe" class="content-section">
+        <div class="dashboard-container">
+            <aside class="sidebar">
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-globe"></i> Globe Controls</h3>
+                    <p style="font-size: 0.9rem; color: #666; margin-bottom: 1rem;">Rotate, zoom, and click on locations
+                        to explore data.</p>
+                    <button onclick="resetGlobe()"
+                        style="width: 100%; padding: 10px; background: var(--primary-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-bottom: 1rem;">
+                        <i class="fas fa-redo"></i> Reset View
+                    </button>
+                    <button onclick="toggleOcean()"
+                        style="width: 100%; padding: 10px; background: var(--success-color); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        <i class="fas fa-water"></i> Toggle Ocean
+                    </button>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-list-ul"></i> Monitoring Points</h3>
+                    <div id="monitoring-points-list" style="max-height: 400px; overflow-y: auto;">
+                        <div class="data-point" onclick="navigateToPoint('atlantic')" style="cursor: pointer;">
+                            <span>N. Atlantic</span>
+                            <span style="font-size: 0.8rem;">45 ppm</span>
+                        </div>
+                        <div class="data-point" onclick="navigateToPoint('pacific')" style="cursor: pointer;">
+                            <span>C. Pacific</span>
+                            <span style="font-size: 0.8rem;">62 ppm</span>
+                        </div>
+                        <div class="data-point" onclick="navigateToPoint('indian')" style="cursor: pointer;">
+                            <span>Indian Ocean</span>
+                            <span style="font-size: 0.8rem;">38 ppm</span>
+                        </div>
+                        <div class="data-point" onclick="navigateToPoint('arctic')" style="cursor: pointer;">
+                            <span>Arctic</span>
+                            <span style="font-size: 0.8rem;">22 ppm</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <main class="main-content" style="background: linear-gradient(135deg, #001a4d 0%, #003d80 100%);">
+                <div id="globeContainerExpanded" style="width: 100%; height: 100%;"></div>
+            </main>
+        </div>
+    </div>
+
+    <div id="preview" class="content-section">
+        <div class="preview-container">
+            <h2
+                style="color: var(--primary-color); margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem;">
+                <i class="fas fa-tachometer-alt" style="font-size: 1.8rem;"></i> Live Data Preview
+            </h2>
+
+            <div class="stats-grid">
+                <div class="stat-card reveal">
+                    <div id="stat-active" class="value">1,240+</div>
+                    <div class="label"><i class="fas fa-database"></i> Active Data Points</div>
+                </div>
+                <div class="stat-card reveal">
+                    <div id="stat-stations" class="value">847</div>
+                    <div class="label"><i class="fas fa-map-pin"></i> Monitoring Stations</div>
+                </div>
+                <div class="stat-card reveal">
+                    <div id="stat-ph" class="value">8.05</div>
+                    <div class="label"><i class="fas fa-flask"></i> Average pH Level</div>
+                </div>
+                <div class="stat-card reveal">
+                    <div id="stat-health" class="value">92%</div>
+                    <div class="label"><i class="fas fa-heartbeat"></i> System Health</div>
+                </div>
+            </div>
+
+            <div class="chart-card reveal" style="margin-top: 2rem;">
+                <h3><i class="fas fa-bell"></i> Recent Alerts & Updates</h3>
+                <div style="border-left: 4px solid var(--primary-color); padding-left: 1rem; margin-bottom: 1.5rem;">
+                    <p style="margin: 0; color: #555; font-weight: 600;">pH Level Alert</p>
+                    <p style="margin: 0.5rem 0 0 0; color: #999; font-size: 0.9rem;">
+                        <i class="fas fa-clock"></i> North Atlantic: pH 8.12 (±0.5)
+                    </p>
+                </div>
+                <div style="border-left: 4px solid var(--accent-color); padding-left: 1rem; margin-bottom: 1rem;">
+                    <p style="margin: 0; color: #555; font-weight: 600;">Temperature Anomaly Detected</p>
+                    <p style="margin: 0.5rem 0 0 0; color: #999; font-size: 0.9rem;">Pacific Ocean: +1.5°C above average
+                    </p>
+                </div>
+                <div style="border-left: 4px solid var(--success-color); padding-left: 1rem;">
+                    <p style="margin: 0; color: #555; font-weight: 600;">New Data Synced</p>
+                    <p style="margin: 0.5rem 0 0 0; color: #999; font-size: 0.9rem;">1,240 records updated - 2 minutes
+                        ago</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<script>
+    // --- Chart.js value-labels plugin (draws numeric labels on datasets) ---
+    (function registerValueLabelPlugin() {
+        const valueLabelPlugin = {
+            id: 'valueLabels',
+            afterDatasetsDraw(chart, args, options) {
+                const { ctx } = chart;
+                ctx.save();
+                const fg = 'rgba(255,255,255,0.95)';
+                const outline = 'rgba(0,0,0,0.72)';
+                ctx.fillStyle = fg;
+                ctx.strokeStyle = outline;
+                ctx.lineWidth = 3;
+                ctx.font = '700 12px Inter, Arial';
+
+                chart.data.datasets.forEach((dataset, dsIndex) => {
+                    const meta = chart.getDatasetMeta(dsIndex);
+                    meta.data.forEach((el, index) => {
+                        let pos = null;
+                        try { pos = el.tooltipPosition ? el.tooltipPosition() : { x: el.x, y: el.y }; } catch (e) { pos = { x: el.x || 0, y: el.y || 0 }; }
+                        if (!pos) return;
+
+                        const val = Array.isArray(dataset.data) ? dataset.data[index] : dataset.data;
+                        if (val === null || val === undefined) return;
+
+                        const text = (typeof val === 'number') ? (Math.abs(val) < 1 ? val.toFixed(2) : (Number.isInteger(val) ? val.toString() : val.toFixed(2))) : String(val);
+
+                        const x = pos.x;
+                        const y = (pos.y || 0) - 8;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'bottom';
+                        // outline then fill for good contrast
+                        ctx.strokeText(text, x, y);
+                        ctx.fillText(text, x, y);
+                    });
+                });
+
+                ctx.restore();
+            }
+        };
+        try { Chart.register(valueLabelPlugin); } catch (e) { console.warn('Chart plugin register failed', e); }
+    })();
+
+    // --- LIVE DATA SIMULATION ---
+    function getLiveData() {
+        const now = new Date();
+        return {
+            timestamp: now.toLocaleTimeString(),
+            date: now.toLocaleDateString(),
+            activeStations: Math.floor(Math.random() * 200) + 800,
+            systemHealth: Math.floor(Math.random() * 10) + 85
+        };
+    }
+
+    // Deterministic mock "real-time" data for a clicked coordinate
+    function fetchRealTimeData(lat, lon) {
+        // Use a simple seeded-ish function based on lat/lon and current minute
+        const seed = Math.abs(Math.floor((lat * 1000) + (lon * 1000))) % 1000;
+        const now = new Date();
+        const minute = now.getUTCMinutes();
+
+        // helper pseudo-random generator
+        function prng(n) {
+            return (Math.abs(Math.sin((seed + n) * 9301) * 10000) % 100) / 100;
+        }
+
+        const ph = (7.8 + prng(1) * 0.5 + (minute % 5) * 0.01).toFixed(2);
+        const tempAnomaly = (0.3 + prng(2) * 2.0).toFixed(2); // °C
+        const plastic = Math.floor(20 + prng(3) * 80); // ppm
+        const biodiversity = Math.max(20, Math.floor(50 + (prng(4) * 50))); // %
+        const salinity = (34 + prng(5) * 2).toFixed(2) + ' PSU';
+        const oxygen = Math.floor(150 + prng(6) * 200) + ' mmol/m³';
+        const currentSpeed = (0.1 + prng(7) * 1.5).toFixed(2) + ' m/s';
+
+        // Pick region name using lon/lat heuristics similar to earlier logic
+        let region = 'Open Ocean';
+        if (lon > -80 && lon < -10 && lat > 10 && lat < 50) region = 'N. Atlantic';
+        else if (lon < -120 || (lon > 140 && lon < 180)) region = 'Central Pacific';
+        else if (lon > 40 && lon < 120 && lat > -20 && lat < 25) region = 'Indian Ocean';
+        else if (lat > 66.5) region = 'Arctic';
+
+        return {
+            timestamp: now.toLocaleString(),
+            region,
+            ph: ph,
+            temp: `+${tempAnomaly}°C`,
+            plastic: plastic + ' ppm',
+            biodiversity: biodiversity + '%',
+            lat: lat,
+            lon: lon,
+            salinity,
+            oxygen,
+            currentSpeed
+        };
+    }
+
+    // --- MOCK DATA (Simulating API) ---
+    const mockApiData = {
+        "atlantic": {
+            region: "N. Atlantic",
+            ph: (7.95 + Math.random() * 0.2).toFixed(2),
+            temp: "+" + (1 + Math.random() * 0.5).toFixed(1) + "°C",
+            plastic: Math.floor(Math.random() * 20 + 40) + " ppm",
+            biodiversity: Math.floor(Math.random() * 15 + 65) + "%",
+            lat: 30,
+            lon: -40,
+            salinity: "35.2 PSU",
+            oxygen: "245 mmol/m³",
+            currentSpeed: "0.5 m/s",
+            waterColor: "#4a90e2"
+        },
+        "pacific": {
+            region: "C. Pacific",
+            ph: (7.90 + Math.random() * 0.2).toFixed(2),
+            temp: "+" + (0.5 + Math.random() * 0.5).toFixed(1) + "°C",
+            plastic: Math.floor(Math.random() * 20 + 50) + " ppm",
+            biodiversity: Math.floor(Math.random() * 15 + 60) + "%",
+            lat: 0,
+            lon: -150,
+            salinity: "35.0 PSU",
+            oxygen: "220 mmol/m³",
+            currentSpeed: "0.7 m/s",
+            waterColor: "#2563eb"
+        },
+        "indian": {
+            region: "Indian Ocean",
+            ph: (8.00 + Math.random() * 0.2).toFixed(2),
+            temp: "+" + (1.2 + Math.random() * 0.5).toFixed(1) + "°C",
+            plastic: Math.floor(Math.random() * 15 + 30) + " ppm",
+            biodiversity: Math.floor(Math.random() * 15 + 63) + "%",
+            lat: -10,
+            lon: 70,
+            salinity: "35.5 PSU",
+            oxygen: "235 mmol/m³",
+            currentSpeed: "0.4 m/s",
+            waterColor: "#1e40af"
+        },
+        "arctic": {
+            region: "Arctic",
+            ph: (7.88 + Math.random() * 0.15).toFixed(2),
+            temp: "+" + (1.8 + Math.random() * 0.5).toFixed(1) + "°C",
+            plastic: Math.floor(Math.random() * 10 + 15) + " ppm",
+            biodiversity: Math.floor(Math.random() * 15 + 40) + "%",
+            lat: 75,
+            lon: 0,
+            salinity: "34.8 PSU",
+            oxygen: "310 mmol/m³",
+            currentSpeed: "0.3 m/s",
+            waterColor: "#0ea5e9"
+        },
+        "caribbean": {
+            region: "Caribbean",
+            ph: (8.12 + Math.random() * 0.15).toFixed(2),
+            temp: "+" + (2.5 + Math.random() * 0.5).toFixed(1) + "°C",
+            plastic: Math.floor(Math.random() * 20 + 35) + " ppm",
+            biodiversity: Math.floor(Math.random() * 15 + 75) + "%",
+            lat: 15,
+            lon: -70,
+            salinity: "35.8 PSU",
+            oxygen: "200 mmol/m³",
+            currentSpeed: "0.6 m/s",
+            waterColor: "#06b6d4"
+        }
+    };
+
+    // --- DOM Elements ---
+    const globeContainer = document.getElementById('globeContainer');
+    const globeContainerExpanded = document.getElementById('globeContainerExpanded');
+    const mapContainer = document.getElementById('mapContainer');
+    const btnGlobe = document.getElementById('btn-globe');
+    const btnMap = document.getElementById('btn-map');
+    const dataPanel = document.getElementById('data-content');
+    const dataRegion = document.getElementById('data-region');
+    const dataPh = document.getElementById('data-ph');
+    const dataTemp = document.getElementById('data-temp');
+    const dataPlastic = document.getElementById('data-plastic');
+    const dataBio = document.getElementById('data-bio');
+    const globePopup = document.getElementById('globePopup');
+
+    // --- VIEWER INSTANCE ---
+    let viewer = null;
+    let expandedViewer = null;
+    let oceanVisible = true;
+    let updateInterval = null;
+
+    function initializeGlobeViewer(containerId, isExpanded = false) {
+        const container = document.getElementById(containerId);
+        if (!container) return null;
+
+        container.innerHTML = '';
+
+        try {
+            // Initialize Leaflet map with satellite imagery
+            const map = L.map(containerId, {
+                zoom: 2,
+                center: [20, 0],
+                minZoom: 1,
+                maxZoom: 19,
+                preferCanvas: true,
+                zoomControl: true,
+                attributionControl: true
+            });
+
+            // Add satellite imagery layer (Esri World Imagery - Google Maps style)
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles © Esri',
+                maxZoom: 19,
+                minZoom: 1
+            }).addTo(map);
+
+            // Add optional labels layer on top
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Esri',
+                maxZoom: 19,
+                opacity: 0.5
+            }).addTo(map);
+
+            // Create custom markers for ocean monitoring stations
+            const oceanIcon = L.icon({
+                iconUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA0OCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIyNCIgY3k9IjI0IiByPSIyMCIgZmlsbD0iIzAwNjJmZiIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIyIi8+PHBvbHlnb24gcG9pbnRzPSIyNCw2NCA0LDQwIDQ0LDQwIiBmaWxsPSIjMDA2MmZmIi8+PC9zdmc+',
+                iconSize: [48, 64],
+                iconAnchor: [24, 64],
+                popupAnchor: [0, -64]
+            });
+
+            // Ocean monitoring stations data
+            const stations = [
+                { lat: 35, lon: -30, name: 'North Atlantic', data: mockApiData.atlantic },
+                { lat: 0, lon: -150, name: 'Central Pacific', data: mockApiData.pacific },
+                { lat: -10, lon: 70, name: 'Indian Ocean', data: mockApiData.indian },
+                { lat: 75, lon: 0, name: 'Arctic Ocean', data: mockApiData.arctic },
+                { lat: 18, lon: -70, name: 'Caribbean Sea', data: mockApiData.caribbean }
+            ];
+
+            // Add markers to map
+            stations.forEach(station => {
+                const marker = L.marker([station.lat, station.lon], { icon: oceanIcon }).addTo(map);
+
+                const popupHtml = `
+                        <div style="font-family: Arial, sans-serif; min-width: 280px;">
+                            <h3 style="margin: 0 0 12px 0; color: #0062ff; font-size: 15px; border-bottom: 2px solid #0062ff; padding-bottom: 8px;">
+                                <i class="fas fa-water"></i> ${station.name}
+                            </h3>
+                            <div style="background: #f9f9f9; padding: 10px; border-radius: 5px; font-size: 12px;">
+                                <p style="margin: 6px 0;"><strong>pH Level:</strong> <span style="color: #0062ff; font-weight: bold;">${station.data.ph}</span></p>
+                                <p style="margin: 6px 0;"><strong>Temperature:</strong> ${station.data.temp}</p>
+                                <p style="margin: 6px 0;"><strong>Plastic Conc.:</strong> <span style="color: #ff6b6b;">${station.data.plastic}</span></p>
+                                <p style="margin: 6px 0;"><strong>Biodiversity:</strong> ${station.data.biodiversity}</p>
+                                <p style="margin: 6px 0;"><strong>Salinity:</strong> ${station.data.salinity}</p>
+                                <p style="margin: 6px 0;"><strong>Oxygen Level:</strong> ${station.data.oxygen}</p>
+                                <p style="margin: 6px 0;"><strong>Current Speed:</strong> ${station.data.currentSpeed}</p>
+                                <hr style="margin: 8px 0; border: none; border-top: 1px solid #ddd;">
+                                <p style="margin: 6px 0; font-size: 11px; color: #999;">
+                                    <i class="fas fa-clock"></i> Updated: ${new Date().toLocaleTimeString()}
+                                </p>
+                            </div>
+                        </div>
+                    `;
+
+                marker.bindPopup(popupHtml, {
+                    maxWidth: 300,
+                    minWidth: 280,
+                    className: 'ocean-health-popup'
+                });
+
+                marker.on('click', () => {
+                    updateSidebar(station.data);
+                });
+            });
+
+            // Add pollution/hazard zones with heatmap-like regions
+            const hazardZones = [
+                {
+                    bounds: [[8, 110], [15, 165]],
+                    name: 'Pacific Garbage Patch',
+                    severity: 'Critical'
+                },
+                {
+                    bounds: [[25, -80], [40, -50]],
+                    name: 'Atlantic Dead Zone',
+                    severity: 'High'
+                },
+                {
+                    bounds: [[30, 40], [40, 60]],
+                    name: 'Arabian Sea Hypoxia',
+                    severity: 'Moderate'
+                }
+            ];
+
+            hazardZones.forEach(zone => {
+                L.rectangle(zone.bounds, {
+                    color: '#ff6b6b',
+                    weight: 2,
+                    opacity: 0.6,
+                    fillColor: '#ff6b6b',
+                    fillOpacity: 0.15,
+                    dashArray: '5, 5'
+                }).bindPopup(`
+                        <div style="font-weight: bold; color: #ff6b6b;">
+                            ${zone.name}<br>
+                            <span style="font-size: 0.9em;">Severity: ${zone.severity}</span>
+                        </div>
+                    `).addTo(map);
+            });
+
+            // Add custom zoom info control
+            const zoomInfo = L.control({ position: 'bottomright' });
+            zoomInfo.onAdd = (map) => {
+                const div = L.DomUtil.create('div', 'leaflet-control');
+                div.style.cssText = `
+                        background: white;
+                        padding: 12px 16px;
+                        border-radius: 5px;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                        font-size: 12px;
+                        color: #333;
+                        z-index: 1000;
+                        font-family: Arial, sans-serif;
+                    `;
+                div.innerHTML = `
+                        <div style="margin-bottom: 8px;"><i class="fas fa-search-plus"></i> Zoom Level: <strong>${map.getZoom()}</strong></div>
+                        <div style="font-size: 11px; color: #666;">
+                            Scroll to zoom • Drag to pan<br>
+                            Click markers for data
+                        </div>
+                    `;
+                map.on('zoom', () => {
+                    div.innerHTML = `
+                            <div style="margin-bottom: 8px;"><i class="fas fa-search-plus"></i> Zoom Level: <strong>${map.getZoom()}</strong></div>
+                            <div style="font-size: 11px; color: #666;">
+                                Scroll to zoom • Drag to pan<br>
+                                Click markers for data
+                            </div>
+                        `;
+                });
+                return div;
+            };
+            zoomInfo.addTo(map);
+
+            // Layer group to store clicked location markers
+            const clickedMarkersGroup = L.featureGroup().addTo(map);
+
+            // Custom marker icon for clicked locations
+            const clickMarkerIcon = L.icon({
+                iconUrl: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA0OCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIyNCIgY3k9IjI0IiByPSIyMCIgZmlsbD0iIzMzZGZmZiIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLXdpZHRoPSIzIi8+PGNpcmNsZSBjeD0iMjQiIGN5PSIyNCIgcj0iMTAiIGZpbGw9IndoaXRlIi8+PHBvbHlnb24gcG9pbnRzPSIyNCw2NCA0LDQwIDQ0LDQwIiBmaWxsPSIjMzNkZmZmIi8+PHBvbHlnb24gcG9pbnRzPSIyNCw2MCAxMCw0NCAzOCw0NCIgZmlsbD0id2hpdGUiIG9wYWNpdHk9IjAuMyIvPjwvc3ZnPg==',
+                iconSize: [48, 64],
+                iconAnchor: [24, 64],
+                popupAnchor: [0, -64]
+            });
+
+            // Click anywhere on map to check ocean data
+            map.on('click', (e) => {
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+                // Fetch deterministic real-time data for this coordinate
+                const data = fetchRealTimeData(lat, lng);
+
+                // Add marker at clicked location and show popup with returned realtime data
+                const marker = L.marker([lat, lng], { icon: clickMarkerIcon }).addTo(clickedMarkersGroup);
+                const popupContent = `
+                        <div style="font-family: Arial, sans-serif;">
+                            <h4 style="margin: 0 0 10px 0; color: #33dfff; font-size: 14px; border-bottom: 2px solid #33dfff; padding-bottom: 8px;">
+                                <i class="fas fa-map-pin"></i> ${data.region}
+                            </h4>
+                            <div style="background: #f0f8ff; padding: 10px; border-radius: 5px; font-size: 12px;">
+                                <p style="margin: 4px 0;"><strong>Lat:</strong> ${lat.toFixed(4)}°</p>
+                                <p style="margin: 4px 0;"><strong>Lon:</strong> ${lng.toFixed(4)}°</p>
+                                <hr style="margin: 8px 0; border: none; border-top: 1px solid #ddd;">
+                                <p style="margin: 4px 0;"><strong>pH:</strong> <span style="color: #0062ff;">${data.ph}</span></p>
+                                <p style="margin: 4px 0;"><strong>Temperature:</strong> ${data.temp}</p>
+                                <p style="margin: 4px 0;"><strong>Plastic:</strong> <span style="color: #ff6b6b;">${data.plastic}</span></p>
+                                <p style="margin: 4px 0;"><strong>Salinity:</strong> ${data.salinity}</p>
+                                <p style="margin: 4px 0;"><strong>Oxygen:</strong> ${data.oxygen}</p>
+                                <p style="margin: 4px 0;"><strong>Current:</strong> ${data.currentSpeed}</p>
+                                <p style="margin: 8px 0 0 0; font-size: 11px; color: #999; border-top: 1px solid #ddd; padding-top: 6px;">
+                                    <i class="fas fa-clock"></i> ${data.timestamp}
+                                </p>
+                            </div>
+                        </div>
+                    `;
+
+                marker.bindPopup(popupContent, { maxWidth: 300, minWidth: 280 }).openPopup();
+
+                // Update UI and charts with the realtime data
+                updateSidebar(data);
+                updatePreviewStats(data);
+                updateChartsWithData(data);
+            });
+
+            // Add clear markers button control
+            const clearControl = L.control({ position: 'topleft' });
+            clearControl.onAdd = (map) => {
+                const div = L.DomUtil.create('div', 'leaflet-control');
+                div.innerHTML = `
+                        <button id="clearMarkersBtn" style="
+                            background: #ff6b6b;
+                            color: white;
+                            border: none;
+                            padding: 10px 15px;
+                            border-radius: 5px;
+                            cursor: pointer;
+                            font-size: 12px;
+                            font-weight: bold;
+                            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+                            transition: all 0.3s;
+                            margin: 10px;
+                            display: none;
+                        ">
+                            <i class="fas fa-trash"></i> Clear Markers
+                        </button>
+                    `;
+
+                const btn = div.querySelector('#clearMarkersBtn');
+
+                // Show button when markers exist
+                map.on('click', () => {
+                    if (clickedMarkersGroup.getLayers().length > 0) {
+                        btn.style.display = 'block';
+                    }
+                });
+
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    clickedMarkersGroup.clearLayers();
+                    btn.style.display = 'none';
+                });
+
+                return div;
+            };
+            clearControl.addTo(map);
+
+            // Handle map resize
+            window.addEventListener('resize', () => {
+                setTimeout(() => {
+                    map.invalidateSize();
+                }, 200);
+            });
+
+            return map;
+        } catch (e) {
+            console.error("Error initializing map:", e);
+            container.innerHTML = '<div style="padding: 20px; text-align: center; color: red; font-size: 18px;"><i class="fas fa-exclamation-circle"></i> Error: ' + e.message + '</div>';
+            return null;
+        }
+    }
+
+    // --- 🗺️ 2D MAP (Leaflet.js) ---
+    let map = null;
+    function initMap() {
+        if (!map) {
+            map = L.map('mapContainer').setView([20, 0], 3);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(map);
+
+            // Add monitoring stations
+            const stations = [
+                { lat: 30, lon: -40, name: "Atlantic Station", data: "45 ppm" },
+                { lat: 0, lon: -150, name: "Pacific Station", data: "62 ppm" },
+                { lat: -10, lon: 70, name: "Indian Ocean", data: "38 ppm" },
+                { lat: 75, lon: 0, name: "Arctic Station", data: "22 ppm" }
+            ];
+
+            stations.forEach(station => {
+                const marker = L.marker([station.lat, station.lon]).addTo(map);
+                marker.bindPopup(`<b>${station.name}</b><br>Plastic: ${station.data}`);
+            });
+
+            const pollutionZone = {
+                "type": "Feature",
+                "properties": { "name": "High Plastic Zone" },
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [[-160, 20], [-130, 20], [-130, 40], [-160, 40], [-160, 20]]
+                    ]
+                }
+            };
+
+            L.geoJSON(pollutionZone, {
+                style: {
+                    color: "red",
+                    weight: 2,
+                    opacity: 0.6,
+                    fillColor: "red",
+                    fillOpacity: 0.3
+                }
+            }).bindPopup("Great Pacific Garbage Patch").addTo(map);
+        }
+    }
+
+    // --- 📊 CHARTS ---
+    let charts = {};
+
+    function initCharts() {
+        // Read theme colors from CSS
+        const rootStyles = getComputedStyle(document.documentElement);
+        const primaryColor = rootStyles.getPropertyValue('--primary-color').trim() || '#00e6ff';
+        const primary2 = rootStyles.getPropertyValue('--primary-2').trim() || '#00b3ff';
+        const accentTeal = rootStyles.getPropertyValue('--accent-teal').trim() || '#1dd1a1';
+        const accentOrange = rootStyles.getPropertyValue('--accent-orange').trim() || '#ffb86b';
+        const accentRed = rootStyles.getPropertyValue('--accent-red').trim() || '#ff6b6b';
+
+        // Trends chart
+        const ctxTrends = document.getElementById('trendsChart');
+        if (ctxTrends) {
+            charts.trends = new Chart(ctxTrends.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
+                    datasets: [{
+                        label: 'pH Level',
+                        data: [8.1, 8.08, 8.09, 8.07, 8.05, 8.06, 8.05],
+                        borderColor: primary2 || 'rgb(0, 179, 255)',
+                        backgroundColor: 'linear-gradient(180deg, rgba(0,179,255,0.12), rgba(0,230,255,0.04))',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 4,
+                        pointBackgroundColor: 'rgb(0, 98, 255)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    animation: { duration: 1200, easing: 'easeOutQuart' },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 7.9,
+                            max: 8.15,
+                            grid: { color: 'rgba(255,255,255,0.03)' },
+                            ticks: { color: 'var(--font-color)' }
+                        },
+                        x: { ticks: { color: 'var(--muted)' }, grid: { color: 'rgba(255,255,255,0.02)' } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { titleColor: 'var(--font-color)', bodyColor: 'var(--font-color)', backgroundColor: 'rgba(2,6,12,0.8)' }
+                    }
+                }
+            });
+        }
+
+        // Chart PH
+        const ctxPH = document.getElementById('chartPH');
+        if (ctxPH) {
+            charts.ph = new Chart(ctxPH.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'pH Level',
+                        // Set Mon/Tue to 9.020 as requested and color them grey
+                        data: [9.02, 9.02, 8.06, 8.08, 8.04, 8.05, 8.03],
+                        borderColor: primary2 || '#00b3ff',
+                        backgroundColor: 'rgba(0,179,255,0.12)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 5,
+                        pointBackgroundColor: [
+                            'var(--muted)', // Mon - grey
+                            'var(--muted)', // Tue - grey
+                            '#0062ff',
+                            '#0062ff',
+                            '#0062ff',
+                            '#0062ff',
+                            '#0062ff'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    animation: { duration: 1000, easing: 'easeOutQuart' },
+                    plugins: { legend: { display: false }, tooltip: { titleColor: 'var(--font-color)', bodyColor: 'var(--font-color)', backgroundColor: 'rgba(2,6,12,0.8)' } },
+                    scales: { x: { ticks: { color: 'var(--muted)' }, grid: { color: 'rgba(255,255,255,0.02)' } }, y: { ticks: { color: 'var(--muted)' }, grid: { color: 'rgba(255,255,255,0.02)' } } }
+                }
+            });
+        }
+
+        // Chart Temp
+        const ctxTemp = document.getElementById('chartTemp');
+        if (ctxTemp) {
+            charts.temp = new Chart(ctxTemp.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['Atlantic', 'Pacific', 'Indian', 'Arctic', 'Caribbean'],
+                    datasets: [{
+                        label: 'Temperature Anomaly (°C)',
+                        data: [1.2, 0.8, 1.5, 2.1, 0.6],
+                        backgroundColor: ['#ff6b6b', '#ffa94d', '#ff922b', '#fd7e14', '#f76707']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    animation: { duration: 1000, easing: 'easeOutQuart' },
+                    plugins: { legend: { display: false }, tooltip: { titleColor: 'var(--font-color)', bodyColor: 'var(--font-color)', backgroundColor: 'rgba(2,6,12,0.8)' } },
+                    scales: { x: { ticks: { color: 'var(--muted)' }, grid: { color: 'rgba(255,255,255,0.02)' } }, y: { ticks: { color: 'var(--muted)' }, grid: { color: 'rgba(255,255,255,0.02)' } } }
+                }
+            });
+        }
+
+        // Chart Plastic
+        const ctxPlastic = document.getElementById('chartPlastic');
+        if (ctxPlastic) {
+            charts.plastic = new Chart(ctxPlastic.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Atlantic', 'Pacific', 'Indian', 'Arctic'],
+                    datasets: [{
+                        data: [45, 62, 38, 22],
+                        backgroundColor: ['#4c6ef5', '#1c7ed6', '#0ca678', '#1098ad'],
+                        borderColor: 'rgba(0,0,0,0.12)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    animation: {
+                        duration: 1400,
+                        easing: 'easeOutBack',
+                        animateScale: true,
+                        animateRotate: true,
+                        // stagger the drawing of segments for a more dynamic entrance
+                        delay: (context) => {
+                            if (context.type === 'data' && typeof context.dataIndex === 'number') {
+                                return context.dataIndex * 140;
+                            }
+                            return 0;
+                        }
+                    },
+                    hoverOffset: 12,
+                    plugins: { legend: { position: 'bottom' }, tooltip: { titleColor: 'var(--font-color)', bodyColor: 'var(--font-color)', backgroundColor: 'rgba(2,6,12,0.9)' } },
+                }
+            });
+        }
+
+        // Chart Bio
+        const ctxBio = document.getElementById('chartBio');
+        if (ctxBio) {
+            charts.bio = new Chart(ctxBio.getContext('2d'), {
+                type: 'radar',
+                data: {
+                    labels: ['Atlantic', 'Pacific', 'Indian', 'Arctic', 'Amazon'],
+                    datasets: [{
+                        label: 'Biodiversity Index (%)',
+                        data: [72, 65, 68, 45, 95],
+                        borderColor: accentTeal || '#51cf66',
+                        backgroundColor: 'rgba(81, 207, 102, 0.12)',
+                        pointBackgroundColor: accentTeal || '#51cf66'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    animation: { duration: 1000, easing: 'easeOutQuart' },
+                    plugins: { legend: { display: false }, tooltip: { titleColor: 'var(--font-color)', bodyColor: 'var(--font-color)', backgroundColor: 'rgba(2,6,12,0.8)' } },
+                    scales: { r: { pointLabels: { color: 'var(--muted)' } }, x: { ticks: { color: 'var(--muted)' }, grid: { color: 'rgba(255,255,255,0.02)' } }, y: { ticks: { color: 'var(--muted)' }, grid: { color: 'rgba(255,255,255,0.02)' } } }
+                }
+            });
+        }
+
+        // Biodiversity Trend Graph (small line beside radar)
+        const ctxBioGraph = document.getElementById('chartBioGraph');
+        if (ctxBioGraph) {
+            charts.bioGraph = new Chart(ctxBioGraph.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: ['2018', '2019', '2020', '2021', '2022', '2023', '2024'],
+                    datasets: [{
+                        label: 'Biodiversity Index',
+                        data: [70, 68, 66, 69, 71, 72, 74],
+                        borderColor: accentTeal || '#1dd1a1',
+                        backgroundColor: 'rgba(29,209,161,0.08)',
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    animation: { duration: 1000, easing: 'easeOutQuart' },
+                    plugins: { legend: { display: false }, tooltip: { titleColor: 'var(--font-color)', bodyColor: 'var(--font-color)', backgroundColor: 'rgba(2,6,12,0.9)' } },
+                    scales: { x: { ticks: { color: 'var(--muted)' }, grid: { color: 'rgba(255,255,255,0.02)' } }, y: { ticks: { color: 'var(--muted)' }, grid: { color: 'rgba(255,255,255,0.02)' } } }
+                }
+            });
+        }
+
+        // Sea Level & Pollutant Charts (replacing network)
+        const ctxSea = document.getElementById('seaLevelChart');
+        if (ctxSea) {
+            charts.seaLevel = new Chart(ctxSea.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: ['2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'],
+                    datasets: [{
+                        label: 'Sea Level (mm)',
+                        data: [12, 18, 25, 30, 36, 42, 50, 58, 65],
+                        borderColor: primary2 || '#00b3ff',
+                        backgroundColor: 'rgba(0,179,255,0.08)',
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    animation: { duration: 1000, easing: 'easeOutQuart' },
+                    plugins: { legend: { display: false }, tooltip: { titleColor: 'var(--font-color)', bodyColor: 'var(--font-color)', backgroundColor: 'rgba(2,6,12,0.9)' } },
+                    scales: { x: { ticks: { color: 'var(--muted)' }, grid: { color: 'rgba(255,255,255,0.02)' } }, y: { ticks: { color: 'var(--muted)' }, grid: { color: 'rgba(255,255,255,0.02)' } } }
+                }
+            });
+        }
+
+        const ctxPoll = document.getElementById('pollutantChart');
+        if (ctxPoll) {
+            charts.pollutant = new Chart(ctxPoll.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Microplastics', 'Chemical Runoff', 'Oil Residue', 'Organic Waste', 'Other'],
+                    datasets: [{
+                        data: [40, 25, 15, 12, 8],
+                        backgroundColor: [accentRed || '#ff6b6b', accentOrange || '#ffb86b', primary2 || '#00b3ff', accentTeal || '#1dd1a1', '#9ca3af']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    animation: { duration: 1000, easing: 'easeOutQuart' },
+                    plugins: { legend: { position: 'bottom' }, tooltip: { titleColor: 'var(--font-color)', bodyColor: 'var(--font-color)', backgroundColor: 'rgba(2,6,12,0.9)' } }
+                }
+            });
+        }
+    }
+
+    // --- ✨ UI Animation Helpers ---
+    function setupRevealAnimations() {
+        const observer = new IntersectionObserver((entries, obs) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('show');
+                    obs.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.12 });
+
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+    }
+
+    function setupHeaderMicroInteraction() {
+        const logo = document.querySelector('.logo');
+        if (!logo) return;
+        const container = logo.closest('header');
+        container && container.addEventListener('mousemove', (ev) => {
+            const r = container.getBoundingClientRect();
+            const x = (ev.clientX - r.left) / r.width - 0.5;
+            const y = (ev.clientY - r.top) / r.height - 0.5;
+            logo.style.transform = `translate(${x * 6}px, ${y * -6}px) scale(1.02)`;
+        });
+        container && container.addEventListener('mouseleave', () => {
+            logo.style.transform = '';
+        });
+    }
+
+    // --- 🛠️ HELPER FUNCTIONS ---
+
+    function updateSidebar(data) {
+        dataRegion.textContent = data.region;
+        dataPh.textContent = data.ph;
+        dataTemp.textContent = data.temp;
+        dataPlastic.textContent = data.plastic;
+        dataBio.textContent = data.biodiversity;
+        dataPanel.style.display = 'block';
+    }
+
+    // Update the preview stat cards (top-right preview panel)
+    function updatePreviewStats(data) {
+        try {
+            const activeEl = document.getElementById('stat-active');
+            const stationsEl = document.getElementById('stat-stations');
+            const phEl = document.getElementById('stat-ph');
+            const healthEl = document.getElementById('stat-health');
+
+            if (activeEl) activeEl.textContent = (Math.floor(Math.random() * 400) + 900).toString();
+            if (stationsEl) stationsEl.textContent = (Math.floor(Math.random() * 200) + 700).toString();
+            if (phEl) phEl.textContent = data.ph;
+            if (healthEl) healthEl.textContent = (80 + Math.floor(Math.random() * 15)) + '%';
+        } catch (e) { console.warn('updatePreviewStats error', e); }
+    }
+
+    // Update charts to reflect the clicked realtime data
+    function updateChartsWithData(data) {
+        try {
+            const timeLabel = new Date().toLocaleTimeString();
+
+            // Trends chart (append pH)
+            if (charts.trends) {
+                const ds = charts.trends.data.datasets[0];
+                const labels = charts.trends.data.labels;
+                labels.push(timeLabel);
+                ds.data.push(parseFloat(data.ph));
+                // keep only last 14 points
+                if (ds.data.length > 14) { ds.data.shift(); labels.shift(); }
+                charts.trends.update({ duration: 900, easing: 'easeOutQuart' });
+            }
+
+            // ph small chart
+            if (charts.ph) {
+                const ds = charts.ph.data.datasets[0];
+                const labels = charts.ph.data.labels;
+                labels.push(timeLabel);
+                ds.data.push(parseFloat(data.ph));
+                if (ds.data.length > 14) { ds.data.shift(); labels.shift(); }
+                charts.ph.update({ duration: 900, easing: 'easeOutQuart' });
+            }
+
+            // plastic doughnut: set first value to this region's plastic and scale others
+            if (charts.plastic) {
+                const val = parseInt((data.plastic || '0').replace(/[^0-9]/g, '')) || 0;
+                const ds = charts.plastic.data.datasets[0];
+                // distribute remaining values to keep donut look
+                ds.data = [val, Math.max(5, Math.floor(val * 1.3)), Math.max(5, Math.floor(val * 0.8)), Math.max(2, Math.floor(val * 0.4))];
+                charts.plastic.update({ duration: 900, easing: 'easeOutQuart' });
+            }
+
+            // biodiversity radar
+            if (charts.bio) {
+                const val = parseInt((data.biodiversity || '0').replace(/[^0-9]/g, '')) || 50;
+                const ds = charts.bio.data.datasets[0];
+                // rotate and update values for a dynamic feel
+                ds.data = ds.data.map(() => Math.max(20, Math.min(100, Math.floor(val + (Math.random() * 20 - 10)))));
+                charts.bio.update({ duration: 900, easing: 'easeOutQuart' });
+            }
+
+            // Sea level chart: append a small incremental value to show trend
+            if (charts.seaLevel) {
+                try {
+                    const ds = charts.seaLevel.data.datasets[0];
+                    const labels = charts.seaLevel.data.labels;
+                    const last = ds.data[ds.data.length - 1] || 50;
+                    const next = Math.round((last + (Math.random() * 1.8 - 0.2)) * 100) / 100;
+                    labels.push(timeLabel);
+                    ds.data.push(next);
+                    if (ds.data.length > 14) { ds.data.shift(); labels.shift(); }
+                    charts.seaLevel.update({ duration: 900, easing: 'easeOutQuart' });
+                } catch (e) { console.warn('seaLevel update error', e); }
+            }
+
+            // Pollutant chart: bias microplastics value then redistribute for visual
+            if (charts.pollutant) {
+                try {
+                    const raw = parseInt((data.plastic || '0').replace(/[^0-9]/g, '')) || 20;
+                    const ds = charts.pollutant.data.datasets[0];
+                    const micro = Math.min(85, Math.max(5, raw));
+                    const chem = Math.max(3, Math.floor(micro * 0.55));
+                    const oil = Math.max(2, Math.floor(micro * 0.25));
+                    const organic = Math.max(1, Math.floor(micro * 0.15));
+                    const other = Math.max(1, 100 - (micro + chem + oil + organic));
+                    ds.data = [micro, chem, oil, organic, other];
+                    charts.pollutant.update({ duration: 900, easing: 'easeOutQuart' });
+                } catch (e) { console.warn('pollutant update error', e); }
+            }
+        } catch (e) { console.warn('updateChartsWithData error', e); }
+    }
+
+    // --- Chart Popup Handlers ---
+    function setupChartPopups() {
+        const popup = document.getElementById('chartPopup');
+        if (!popup) return;
+
+        function showPopupAt(html, pageX, pageY, expanded = false) {
+            popup.innerHTML = html;
+            popup.classList.toggle('large', !!expanded);
+            popup.style.display = 'block';
+            popup.style.opacity = '1';
+            // place with some offset and clamp to viewport
+            const offset = 14;
+            const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+            const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+            let left = pageX + offset;
+            let top = pageY + offset;
+            // if overflowing to right, move leftwards
+            if (left + popup.offsetWidth + 12 > vw) left = Math.max(12, pageX - popup.offsetWidth - offset);
+            if (top + popup.offsetHeight + 12 > vh) top = Math.max(12, pageY - popup.offsetHeight - offset);
+            popup.style.left = left + 'px';
+            popup.style.top = top + 'px';
+            popup.style.transform = 'translate(0,0) scale(1)';
+        }
+
+        function hidePopup() {
+            popup.style.opacity = '0';
+            popup.style.display = 'none';
+            popup.classList.remove('large');
+        }
+
+        // Attach to every Chart.js canvas instance in `charts`
+        Object.keys(charts).forEach(key => {
+            const ch = charts[key];
+            if (!ch || !ch.canvas) return;
+            const canvas = ch.canvas;
+
+            canvas.addEventListener('mousemove', (ev) => {
+                try {
+                    const points = ch.getElementsAtEventForMode(ev, 'nearest', { intersect: true }, false);
+                    if (points && points.length) {
+                        const pt = points[0];
+                        const idx = pt.index;
+                        const ds = pt.datasetIndex;
+                        const label = ch.data.labels && ch.data.labels[idx] ? ch.data.labels[idx] : '';
+                        const dsLabel = (ch.data.datasets[ds] && ch.data.datasets[ds].label) ? ch.data.datasets[ds].label : '';
+                        const value = (ch.data.datasets[ds] && ch.data.datasets[ds].data && ch.data.datasets[ds].data[idx] !== undefined) ? ch.data.datasets[ds].data[idx] : '';
+                        const html = `<h4>${dsLabel}</h4><div class="meta"><strong>${label}</strong> — ${value}</div>`;
+                        showPopupAt(html, ev.pageX, ev.pageY, false);
+                    } else {
+                        hidePopup();
+                    }
+                } catch (e) { console.warn('chart popup mousemove error', e); }
+            });
+
+            canvas.addEventListener('mouseleave', () => hidePopup());
+
+            // Click to show expanded popup with more details
+            canvas.addEventListener('click', (ev) => {
+                try {
+                    const points = ch.getElementsAtEventForMode(ev, 'nearest', { intersect: true }, false);
+                    if (points && points.length) {
+                        const pt = points[0];
+                        const idx = pt.index;
+                        const ds = pt.datasetIndex;
+                        const label = ch.data.labels && ch.data.labels[idx] ? ch.data.labels[idx] : '';
+                        const dsLabel = (ch.data.datasets[ds] && ch.data.datasets[ds].label) ? ch.data.datasets[ds].label : '';
+                        const value = (ch.data.datasets[ds] && ch.data.datasets[ds].data && ch.data.datasets[ds].data[idx] !== undefined) ? ch.data.datasets[ds].data[idx] : '';
+                        // create a small detail block with recent history if available
+                        let historyHtml = '';
+                        if (Array.isArray(ch.data.datasets[ds].data)) {
+                            const start = Math.max(0, idx - 4);
+                            const slice = ch.data.datasets[ds].data.slice(start, idx + 1);
+                            historyHtml = '<div style="margin-top:8px;color:#333;font-size:0.92rem;">Recent: ' + slice.join(', ') + '</div>';
+                        }
+                        const html = `<h4>${dsLabel} — ${label}</h4><div class="meta">Value: <strong>${value}</strong></div>${historyHtml}`;
+                        showPopupAt(html, ev.pageX, ev.pageY, true);
+                    }
+                } catch (e) { console.warn('chart popup click error', e); }
+            });
+        });
+    }
+
+    // Populate Regional Water Quality and Alerts panel
+    function populateDashboardPanels() {
+        const regions = [
+            { name: 'North America', pct: 82, label: 'Good' },
+            { name: 'South America', pct: 74, label: 'Moderate' },
+            { name: 'Europe', pct: 88, label: 'Good' },
+            { name: 'Africa', pct: 65, label: 'Concerning' },
+            { name: 'Asia', pct: 58, label: 'Critical' },
+            { name: 'Oceania', pct: 91, label: 'Excellent' }
+        ];
+
+        const regionList = document.getElementById('regionList');
+        if (regionList) {
+            regionList.innerHTML = '';
+            regions.forEach(r => {
+                const row = document.createElement('div');
+                row.className = 'region-row';
+                row.innerHTML = `
+                        <div class="region-meta">
+                            <div class="name">${r.name}</div>
+                        </div>
+                        <div class="progress-bar-bg" aria-valuenow="${r.pct}">
+                            <div class="progress-bar-fill" style="width:${r.pct}%;"></div>
+                        </div>
+                        <div style="width:80px; text-align:right; font-weight:700; color:var(--font-color);">${r.pct}%</div>
+                    `;
+                regionList.appendChild(row);
+            });
+        }
+
+        const alerts = [
+            { type: 'danger', title: 'High Microplastic Concentration', sub: 'Pacific Ocean - 12.5 particles/m³ detected', time: '2 hours ago' },
+            { type: 'warning', title: 'Decreasing pH Levels', sub: 'Atlantic Ocean - pH dropped to 7.95', time: '5 hours ago' },
+            { type: 'success', title: 'Purification Progress', sub: 'Mediterranean Sea - 15% cleaner this quarter', time: '1 day ago' }
+        ];
+
+        const alertsList = document.getElementById('alertsList');
+        if (alertsList) {
+            alertsList.innerHTML = '';
+            alerts.forEach(a => {
+                const card = document.createElement('div');
+                card.className = 'alert-card ' + (a.type === 'danger' ? '' : (a.type === 'warning' ? 'warning' : 'success'));
+                card.innerHTML = `<div class="title">${a.title}</div><div class="alert-sub">${a.sub}</div><div style="font-size:0.85rem;color:var(--muted);margin-top:8px;">${a.time}</div>`;
+                alertsList.appendChild(card);
+            });
+        }
+    }
+
+    function switchSection(sectionId, event) {
+        if (event) event.preventDefault();
+
+        // Hide all sections
+        document.querySelectorAll('.content-section').forEach(section => {
+            section.classList.remove('active');
+        });
+
+        // Show selected section
+        const targetSection = document.getElementById(sectionId);
+        if (targetSection) {
+            targetSection.classList.add('active');
+        }
+
+        // Update nav active state
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
+        });
+
+        // Check if event and event.target exist before trying to find closest
+        if (event && event.target) {
+            const activeLink = event.target.closest('.nav-link');
+            if (activeLink) activeLink.classList.add('active');
+        } else {
+            // Fallback for non-event calls (like hero button)
+            const fallbackLink = document.querySelector(`.nav-link[href="#${sectionId}"]`);
+            if (fallbackLink) fallbackLink.classList.add('active');
+        }
+
+
+        // Initialize viewers/maps for sections
+        setTimeout(() => {
+            if (sectionId === 'dashboard') {
+                if (!viewer) {
+                    viewer = initializeGlobeViewer('globeContainer', false);
+                }
+                if (viewer) viewer.invalidateSize(); // Ensure map resizes
+            } else if (sectionId === 'chart') {
+                if (charts.ph) charts.ph.resize();
+                if (charts.temp) charts.temp.resize();
+                if (charts.plastic) charts.plastic.resize();
+                if (charts.bio) charts.bio.resize();
+                if (charts.seaLevel) charts.seaLevel.resize();
+                if (charts.pollutant) charts.pollutant.resize();
+            } else if (sectionId === 'globe') {
+                if (!expandedViewer) {
+                    expandedViewer = initializeGlobeViewer('globeContainerExpanded', true);
+                }
+                if (expandedViewer) expandedViewer.invalidateSize(); // Ensure map resizes
+            }
+        }, 100);
+    }
+
+    function resetGlobe() {
+        const activeViewer = viewer || expandedViewer;
+        if (activeViewer && activeViewer.resetView) {
+            activeViewer.resetView();
+        }
+    }
+
+    function toggleOcean() {
+        const activeViewer = viewer || expandedViewer;
+        if (activeViewer) {
+            oceanVisible = !oceanVisible;
+            if (activeViewer.earth) {
+                activeViewer.earth.visible = oceanVisible;
+            }
+        }
+    }
+
+    function navigateToPoint(pointKey) {
+        const activeViewer = viewer || expandedViewer;
+        if (activeViewer && mockApiData[pointKey]) {
+            const data = mockApiData[pointKey];
+            updateSidebar(data);
+            if (activeViewer.earth) {
+                // Rotate to point
+                const lat = data.lat * Math.PI / 180;
+                const lon = data.lon * Math.PI / 180;
+                activeViewer.earth.rotation.y = -lon;
+                activeViewer.earth.rotation.x = -lat;
+            }
+        }
+    }
+
+    // --- GLOBE TOGGLE IN DASHBOARD ---
+    if (btnGlobe) {
+        btnGlobe.addEventListener('click', () => {
+            if (globeContainer) globeContainer.style.display = 'block';
+            if (mapContainer) mapContainer.style.display = 'none';
+            btnGlobe.classList.add('active');
+            btnMap.classList.remove('active');
+            if (!viewer) {
+                viewer = initializeGlobeViewer('globeContainer', false);
+            } else {
+                setTimeout(() => viewer.invalidateSize(), 100); // Resize on show
+            }
+        });
+    }
+
+    if (btnMap) {
+        btnMap.addEventListener('click', () => {
+            if (globeContainer) globeContainer.style.display = 'none';
+            if (mapContainer) mapContainer.style.display = 'block';
+            btnGlobe.classList.remove('active');
+            btnMap.classList.add('active');
+            initMap();
+            setTimeout(() => {
+                if (map) map.invalidateSize();
+            }, 100);
+        });
+    }
+
+    // --- INITIALIZATION ---
+    document.addEventListener('DOMContentLoaded', function () {
+        try {
+            // NEW: Hamburger Menu Toggle
+            const navToggle = document.querySelector('.nav-toggle');
+            const navMenu = document.getElementById('nav-menu');
+
+            if (navToggle && navMenu) {
+                navToggle.addEventListener('click', () => {
+                    navMenu.classList.toggle('active');
+                    navToggle.classList.toggle('active');
+                });
+
+                // Optional: Close menu when a link is clicked
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.addEventListener('click', () => {
+                        navMenu.classList.remove('active');
+                        navToggle.classList.remove('active');
+                    });
+                });
+            }
+            // --- END of new menu JS ---
+
+
+            // Initialize main globe viewer and charts
+            try { viewer = initializeGlobeViewer('globeContainer', false); } catch (e) { console.warn('globe init failed', e); }
+            initCharts();
+            // Setup reveal animations and header micro interactions
+            try { setupRevealAnimations(); } catch (e) { console.warn('reveal init failed', e); }
+            try { setupHeaderMicroInteraction(); } catch (e) { console.warn('header micro init failed', e); }
+
+            // populate dashboard panels (regional & alerts)
+            try { populateDashboardPanels(); } catch (e) { console.warn('populate panels failed', e); }
+
+            // setup interactive chart popups
+            try { setupChartPopups(); } catch (e) { console.warn('chart popups init failed', e); }
+
+            // Update live data every 30 seconds
+            setInterval(() => {
+                const liveData = getLiveData();
+                console.log("Live update:", liveData);
+            }, 30000);
+        } catch (e) {
+            console.error("Initialization error:", e);
+        }
+    });
+
+</script>
+</body>
+
+</html>
